@@ -6,6 +6,7 @@ var program = require('commander');
 var async = require('async');
 var request = require('request');
 var urlJoin = require('url-join');
+var cas = require('../lib/add_certs.js');
 
 var firewall = require('../lib/firewall');
 var path = require('path');
@@ -116,6 +117,9 @@ exports.run = function (workingPath, callback) {
     },
     function (cb) {
       certificate(workingPath, info, cb);
+    },
+    function (cb) {
+      cas.inject(cb);
     },
     function (cb) {
       var password = nconf.get('LDAP_BIND_PASSWORD');
