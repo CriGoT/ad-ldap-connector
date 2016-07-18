@@ -1,3 +1,6 @@
+require('../lib/initConf');
+require('../lib/setupProxy');
+
 var cas = require('../lib/add_certs');
 var os = require('os');
 var fs = require('fs');
@@ -13,9 +16,6 @@ var freeport = require('freeport');
 var multipart = require('connect-multiparty');
 var test_config = require('./test_config');
 var Users = require('../lib/users');
-
-require('../lib/initConf');
-require('../lib/setupProxy');
 
 app.configure(function() {
   this.set('views', __dirname + '/views');
@@ -61,15 +61,20 @@ function set_current_config(req, res, next) {
 }
 
 function restart_server(cb) {
-  console.log('Restarting Auth0 ADLDAP Service...');
-  return exec('net stop "Auth0 ADLDAP"', function() {
-    exec('net start "Auth0 ADLDAP"', function() {
-      console.log('Done.');
-      setTimeout(function() {
-        return cb();
-      }, 2000);
+  require('../lib/initConf'); 
+  if (process.platform === 'win32') {
+    console.log('Restarting Auth0 ADLDAP Service...');
+    return exec('net stop "Auth0 ADLDAP"', function() {
+      exec('net start "Auth0 ADLDAP"', function() {
+        console.log('Done.');
+        setTimeout(function() {
+          return cb();
+        }, 2000);
+      });
     });
-  });
+  }
+
+  cb();
 }
 
 function merge_config(req, res) {
