@@ -30,19 +30,21 @@ app.configure(function() {
 
 var detected_settings = {};
 
-exec('"' + __dirname + '//settings_detector.exe"', function(err, stdout, stderr) {
-  console.log(arguments);
-  try {
-    var parsed = JSON.parse(stdout);
-    console.log(parsed);
-    if (parsed.error) {
-      parsed = {};
-      return;
-    }
-    detected_settings.LDAP_BASE = parsed.baseDN;
-    detected_settings.LDAP_URL = 'ldap://' + parsed.domainController;
-  } catch (er) {}
-});
+if (process.platform === 'win32') {
+  exec('"' + __dirname + '//settings_detector.exe"', function(err, stdout, stderr) {
+    console.log(arguments);
+    try {
+      var parsed = JSON.parse(stdout);
+      console.log(parsed);
+      if (parsed.error) {
+        parsed = {};
+        return;
+      }
+      detected_settings.LDAP_BASE = parsed.baseDN;
+      detected_settings.LDAP_URL = 'ldap://' + parsed.domainController;
+    } catch (er) {}
+  });
+}
 
 function read_current_config() {
   var current_config = {};
@@ -164,6 +166,14 @@ app.post('/ticket', set_current_config, function(req, res, next) {
       console.error('Unable to reach auth0 at: ' + info_url);
       return res.render('index', xtend(req.current_config, {
         ERROR: 'Unable to connect to Auth0, verify internet connectivity.'
+      }));
+    }
+
+    if (err && (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || err.code ==='CERT_UNTRUSTED' || err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT')) {
+      console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
+
+      return res.render('index', xtend(req.current_config, {
+        ERROR: 'The Auth0 server is using either a selg-signed certificate or a certificate issued by an untrusted Certification Authority.<br/> Go to https://auth0.com/docs/connector/self-signed-certificates for instructions on how to install your certificate\n' + err.message
       }));
     }
 
@@ -474,7 +484,7 @@ app.get('/users/by-login', function(req, res) {
 cas.inject(function(err) {
   if (err) console.log('Custom CA certificates were not loaded',err);
 
-  http.createServer(app).listen(8357, '127.0.0.1', function() {
+  http.createServer(app).listen(8357,  function() {
     console.log('Listening on http://localhost:8357.');
   });
 });
