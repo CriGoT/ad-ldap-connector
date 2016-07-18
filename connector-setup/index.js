@@ -40,6 +40,9 @@ exports.run = function (workingPath, callback) {
         provisioningTicket = pt;
         cb();
       });
+    },
+    function (cb) {
+      cas.inject(cb);
     }, function (cb) {
       var info_url = urlJoin(provisioningTicket, '/info');
       console.log('Loading settings from ticket: ' + info_url);
@@ -117,9 +120,6 @@ exports.run = function (workingPath, callback) {
     },
     function (cb) {
       certificate(workingPath, info, cb);
-    },
-    function (cb) {
-      cas.inject(cb);
     },
     function (cb) {
       var password = nconf.get('LDAP_BIND_PASSWORD');
