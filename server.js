@@ -33,10 +33,12 @@ connectorSetup.run(__dirname, function(err) {
     return exit(2);
   }
 
-  if(!nconf.get('LDAP_URL')) {
+  if(!nconf.get('LDAP_URL') || !nconf.get('LDAP_BIND_USER') || !nconf.get('LDAP_BIND_CREDENTIALS')) {
     console.error('edit config.json and add your LDAP settings');
     return exit(1);
   }
+
+  console.log(nconf.get('LDAP_URL'), nconf.get('LDAP_BIND_USER'), nconf.get('LDAP_BIND_CREDENTIALS'));
 
   require('./lib/clock_skew_detector');
   ws_client = require('./ws_validator');
