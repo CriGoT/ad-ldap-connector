@@ -170,31 +170,28 @@ app.post('/ticket', set_current_config, function(req, res, next) {
     url: info_url,
     json: true
   }, function(err, resp, body) {
-    if (err && err.code === 'ECONNREFUSED') {
-      console.error('Unable to reach auth0 at: ' + info_url);
-      return res.render('index', xtend(req.current_config, {
-        ERROR: 'Unable to connect to Auth0, verify internet connectivity.'
-      }));
-    }
+    if (err){
+      if (err.code === 'ECONNREFUSED') {
+        console.error('Unable to reach auth0 at: ' + info_url);
+        return res.render('index', xtend(req.current_config, {
+          ERROR: 'Unable to connect to Auth0, verify internet connectivity.'
+        }));
+      }
 
-    if (err && (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || err.code ==='CERT_UNTRUSTED')) {
-      console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
+      if (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || err.code ==='CERT_UNTRUSTED') {
+        console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
+        return res.render('index', xtend(req.current_config, {
+          ERROR: 'The Auth0 server is using a certificate issued by an untrusted Certification Authority. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate Authority. \n ' + err.message
+        }));
+      }
 
-      return res.render('index', xtend(req.current_config, {
-        ERROR: 'The Auth0 server is using a certificate issued by an untrusted Certification Authority. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate Authority. \n ' + err.message
-      }));
-    }
-
-    if (err && (err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT')) {
-      console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
-
-      return res.render('index', xtend(req.current_config, {
-        ERROR: 'The Auth0 server is using a selg-signed certificate. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate. \n' + err.message
-      }));
-    }
-
-
-    if (err) {
+      if (err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT') {
+        console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
+        return res.render('index', xtend(req.current_config, {
+          ERROR: 'The Auth0 server is using a selg-signed certificate. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate. \n' + err.message
+        }));
+      }
+      
       return res.render('index', xtend(req.current_config, {
         ERROR: 'Network error: ' + err.message
       }));
@@ -208,7 +205,16 @@ app.post('/ticket', set_current_config, function(req, res, next) {
 
     req.body.AD_HUB = body.adHub;
 
-    next();
+    if (!detected_settings.LDAP_URL) {
+      var adLdapSettings = require('../connector-setup/steps/ad-ldap-settings.js');
+      adLdapSettings.discoverSettings(body.connectionDomain, function(config) {
+        console.dir(config);
+        detected_settings = config;
+        next();
+      });
+    } else {
+      next();
+    }
   });
 }, merge_config);
 
