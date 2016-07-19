@@ -7,13 +7,13 @@ var async = require('async');
 var request = require('request');
 var urlJoin = require('url-join');
 var cas = require('../lib/add_certs.js');
-
 var firewall = require('../lib/firewall');
 var path = require('path');
 
 //steps
 var certificate = require('./steps/certificate');
 var configureConnection = require('./steps/configureConnection');
+var adLdapSettings = require('./steps/ad-ldap-settings');
 
 program
   .version(require('../package.json').version)
@@ -88,7 +88,37 @@ exports.run = function (workingPath, callback) {
 
         info = body;
 
+
         cb();
+      });
+    },
+    function(cb) {
+      var ldap_url = nconf.get('LDAP_URL');
+      var ldap_base = nconf.get('LDAP_BASE');
+
+      if(ldap_url) return cb();
+
+      adLdapSettings.discoverSettings(info.connectionDomain, function(config) {
+        var detectedUrl = '';
+        var detectedDN = ''
+        if (config) {
+          detectedUrl = config.LDAP_URL || '';
+          detectedDN = config.LDAP_BASE || '';
+
+        }
+        program.prompt('Please enter your LDAP server URL [' + (detectedUrl) + ']:', function (url) {
+          ldap_url = (url && url.length>0) ? url : detectedUrl;
+
+          program.prompt('Please enter the LDAP server base DN [' + (detectedDN) + ']:', function (dn) {
+            ldap_base = (dn && dn.length>0) ? url : detectedDN;
+
+            nconf.set('LDAP_BASE', ldap_base);
+            nconf.set('LDAP_URL', ldap_url);
+            nconf.save();
+
+            cb();
+          });
+        });
       });
     },
     function (cb) {
