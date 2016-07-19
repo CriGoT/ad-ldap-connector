@@ -61,7 +61,10 @@ function set_current_config(req, res, next) {
 }
 
 function restart_server(cb) {
-  require('../lib/initConf'); 
+   // required to test immediately after configuration
+  require('../lib/initConf');
+  Users = require('../lib/users');
+
   if (process.platform === 'win32') {
     console.log('Restarting Auth0 ADLDAP Service...');
     return exec('net stop "Auth0 ADLDAP"', function() {
@@ -174,13 +177,22 @@ app.post('/ticket', set_current_config, function(req, res, next) {
       }));
     }
 
-    if (err && (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || err.code ==='CERT_UNTRUSTED' || err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT')) {
+    if (err && (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || err.code ==='CERT_UNTRUSTED')) {
       console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
 
       return res.render('index', xtend(req.current_config, {
-        ERROR: 'The Auth0 server is using either a selg-signed certificate or a certificate issued by an untrusted Certification Authority.<br/> Go to https://auth0.com/docs/connector/self-signed-certificates for instructions on how to install your certificate\n' + err.message
+        ERROR: 'The Auth0 server is using a certificate issued by an untrusted Certification Authority. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate Authority. \n ' + err.message
       }));
     }
+
+    if (err && (err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT')) {
+      console.error('The Auth0 certificate at ' + info_url + ' could not be validated', err);
+
+      return res.render('index', xtend(req.current_config, {
+        ERROR: 'The Auth0 server is using a selg-signed certificate. Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate. \n' + err.message
+      }));
+    }
+
 
     if (err) {
       return res.render('index', xtend(req.current_config, {

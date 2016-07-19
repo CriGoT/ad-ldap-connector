@@ -52,13 +52,25 @@ exports.run = function (workingPath, callback) {
         json: true
       }, function (err, response, body) {
         if (err) {
-          if (err.code === 'ECONNREFUSED') {
-            console.log('Unable to reach Auth0 at ' + ticket);
-          } else {
-            console.log('Unexpected error while configuring connection: ' + (err.code || err.message));
+          switch(err.code) {
+            case 'ECONNREFUSED':
+              console.log('Unable to reach Auth0 at ' + ticket);
+              break;
+            case 'UNABLE_TO_VERIFY_LEAF_SIGNATURE':
+            case 'CERT_UNTRUSTED':
+              console.error('The Auth0 server is using a certificate issued by an untrusted Certification Authority.', err)
+              console.log('Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your CA certificate.');
+              break;
+            case 'DEPTH_ZERO_SELF_SIGNED_CERT':
+              console.error('The Auth0 server is using a self-signed certificate', err)
+              console.log('Go to https://auth0.com/docs/connector/ca-certificates for instructions on how to install your certificate.');
+              break;
+            default:
+              console.error('Unexpected error while configuring connection:', err);            
           }
           return cb(err);
         }
+
 
         if (response.statusCode == 404) {
           return cb (new Error('Wrong ticket. Does this connection still exist?'));

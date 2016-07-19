@@ -40,7 +40,6 @@ connectorSetup.run(__dirname, function(err) {
 
   require('./lib/clock_skew_detector');
   ws_client = require('./ws_validator');
-
   var latency_test = require('./latency_test');
   latency_test.run_many(10);
 
