@@ -507,7 +507,7 @@ app.get('/users/by-login', function(req, res) {
 cas.inject(function(err) {
   if (err) console.log('Custom CA certificates were not loaded',err);
 
-  http.createServer(app).listen(8357,  function() {
+  http.createServer(app).listen(8357, '127.0.0.1', function() {
     console.log('Listening on http://localhost:8357.');
   });
 });
