@@ -110,7 +110,7 @@ exports.run = function (workingPath, callback) {
           ldap_url = (url && url.length>0) ? url : detectedUrl;
 
           program.prompt('Please enter the LDAP server base DN [' + (detectedDN) + ']:', function (dn) {
-            ldap_base = (dn && dn.length>0) ? url : detectedDN;
+            ldap_base = (dn && dn.length>0) ? dn : detectedDN;
 
             nconf.set('LDAP_BASE', ldap_base);
             nconf.set('LDAP_URL', ldap_url);
