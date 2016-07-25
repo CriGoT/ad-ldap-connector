@@ -106,15 +106,21 @@ exports.run = function (workingPath, callback) {
           detectedDN = config.LDAP_BASE || '';
 
         }
-        program.prompt('Please enter your LDAP server URL [' + (detectedUrl) + ']:', function (url) {
+
+        if (console.restore) console.restore();
+
+        console.log('test');
+        program.prompt('Please enter your LDAP server URL [' + (detectedUrl) + ']: ', function (url) {
           ldap_url = (url && url.length>0) ? url : detectedUrl;
 
-          program.prompt('Please enter the LDAP server base DN [' + (detectedDN) + ']:', function (dn) {
+          program.prompt('Please enter the LDAP server base DN [' + (detectedDN) + ']: ', function (dn) {
             ldap_base = (dn && dn.length>0) ? dn : detectedDN;
 
             nconf.set('LDAP_BASE', ldap_base);
             nconf.set('LDAP_URL', ldap_url);
             nconf.save();
+            
+            if (console.inject) console.inject();
 
             cb();
           });
